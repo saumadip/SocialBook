@@ -1,8 +1,15 @@
-package com.hsbc.sb.api;
+package com.hsbc.sb.core;
 
-import java.util.List;
+import java.util.Deque;
 import java.util.Map;
 
+/**
+ * Implement SocialBookService to create new SocialNetwork
+ *
+ * Contains the must have functionality of a service
+ *
+ * @author Saumadip Mazumder
+ */
 public interface SocialBookService {
 
     /**
@@ -40,6 +47,6 @@ public interface SocialBookService {
      * TimeLine A user should be able to see a list of the messages posted by all the people they follow, in reverse chronological order.
      * @param userId
      */
-    Map<String,List<String>> viewTimeLine(long userId);
+    Map<String, Deque<String>> viewTimeLine(long userId);
 
 }

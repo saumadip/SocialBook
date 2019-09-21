@@ -1,9 +1,6 @@
 package com.hsbc.sb.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.hsbc.sb.api.User;
+import com.hsbc.sb.core.User;
 import com.hsbc.sb.memory.SocialBookInMemoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
+import java.util.Deque;
 import java.util.Map;
 
 @RestController
@@ -20,21 +17,15 @@ public class SocialBookRestController {
     @Autowired
     private SocialBookInMemoryService socialBookInMemoryService;
 
-    private final Gson gson;
-
-    public SocialBookRestController() {
-        this.gson = new GsonBuilder().enableComplexMapKeySerialization()
-                .setPrettyPrinting().create();;
-    }
-
     /**
-     *  Returns a newly created userId
-     * @param name
+     * Returns a newly created userId
+     * @param userResponseModel
      * @return
      */
-    @PostMapping("/user")
-    public ResponseEntity<String> create(@RequestBody String name) {
-        long id = socialBookInMemoryService.create(name);
+    @PostMapping(value="/user", consumes = "application/json")
+    public ResponseEntity<String> create(@RequestBody UserRequestModel userResponseModel) {
+
+        long id = socialBookInMemoryService.create(userResponseModel.getUserName());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path(
                 "/{userId}").buildAndExpand(id).toUri();
         return ResponseEntity.created(location).build();
@@ -46,10 +37,13 @@ public class SocialBookRestController {
      * @return
      */
     @GetMapping("/user/{userId}")
-    public ResponseEntity<String> getWall(@PathVariable long userId) {
+    public ResponseEntity<UserResponseModel> getWall(@PathVariable long userId) {
+
         User user = socialBookInMemoryService.getUser(userId);
-        String json = gson.toJson(user.displayListOfMessages());
-        return ResponseEntity.ok(json);
+        WallModel wallModel = new WallModel(user.displayListOfMessages());
+        UserResponseModel userResponseModel = new UserResponseModel(user.getName(),wallModel);
+
+        return ResponseEntity.ok(userResponseModel);
     }
 
 
@@ -67,14 +61,15 @@ public class SocialBookRestController {
     }
 
     /**
-     * Post comment on own wall
+     * Post comment or multiple comments on own messages
      * @param userId
-     * @param message
+     * @param wallModel
      * @return
      */
     @PostMapping("/user/{userId}/")
-    public ResponseEntity<String> postOnWall(@PathVariable long userId, @RequestBody String message) {
-        socialBookInMemoryService.post(userId,message);
+    public ResponseEntity<String> postOnWall(@PathVariable long userId, @RequestBody WallModel wallModel) {
+
+        wallModel.getMessages().forEach(message->socialBookInMemoryService.post(userId,message));
         return ResponseEntity.ok().build();
     }
 
@@ -85,9 +80,10 @@ public class SocialBookRestController {
      * @return
      */
     @GetMapping("/user/{userId}/displaytimeline")
-    public ResponseEntity<String> displayTimeLine(@PathVariable long userId) {
-        Map<String, List<String>> stringListMap = socialBookInMemoryService.viewTimeLine(userId);
-        return ResponseEntity.ok(gson.toJson(stringListMap));
+    public ResponseEntity<Map<String, Deque<String>>> displayTimeLine(@PathVariable long userId) {
+
+        Map<String, Deque<String>> userNameToMessage = socialBookInMemoryService.viewTimeLine(userId);
+        return ResponseEntity.ok(userNameToMessage);
     }
 
 }

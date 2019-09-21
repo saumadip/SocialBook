@@ -1,8 +1,9 @@
-package com.hsbc.sb.api;
+package com.hsbc.sb.core;
 
 /**
  * Start Following the user passed
  * @param <T>
+ * @author Saumadip Mazumder
  */
 public interface Followable<T extends User> {
 
